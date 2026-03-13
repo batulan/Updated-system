@@ -1,1 +1,701 @@
-
+<!doctype html>
+<html lang="en" class="h-full">
+ <head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AgriFlo WaterWise Dashboard</title>
+  <script src="https://cdn.tailwindcss.com/3.4.17"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-color: #0a1628;
+      --surface-color: #1a2942;
+      --text-color: #e8f0f8;
+      --primary-action: #10b981;
+      --secondary-action: #3b82f6;
+    }
+    
+    * { box-sizing: border-box; }
+    
+    body {
+      font-family: 'Space Grotesk', sans-serif;
+      background: var(--bg-color);
+      color: var(--text-color);
+    }
+    
+    .mono { font-family: 'JetBrains Mono', monospace; }
+    
+    .gradient-border {
+      background: linear-gradient(135deg, rgba(16, 185, 129, 0.3), rgba(59, 130, 246, 0.3));
+      padding: 1px;
+      border-radius: 16px;
+    }
+    
+    .card-inner {
+      background: var(--surface-color);
+      border-radius: 15px;
+      height: 100%;
+    }
+    
+    .glow-green {
+      box-shadow: 0 0 20px rgba(16, 185, 129, 0.4), 0 0 40px rgba(16, 185, 129, 0.2);
+    }
+    
+    .glow-blue {
+      box-shadow: 0 0 20px rgba(59, 130, 246, 0.4), 0 0 40px rgba(59, 130, 246, 0.2);
+    }
+    
+    .glow-red {
+      box-shadow: 0 0 20px rgba(239, 68, 68, 0.4), 0 0 40px rgba(239, 68, 68, 0.2);
+    }
+    
+    .pulse-dot {
+      animation: pulse 2s ease-in-out infinite;
+    }
+    
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.6; transform: scale(1.1); }
+    }
+    
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    
+    .animate-in {
+      animation: fadeIn 0.5s ease-out forwards;
+    }
+    
+    .water-wave {
+      background: linear-gradient(90deg, transparent, rgba(59, 130, 246, 0.3), transparent);
+      animation: wave 2s linear infinite;
+    }
+    
+    @keyframes wave {
+      0% { transform: translateX(-100%); }
+      100% { transform: translateX(100%); }
+    }
+    
+    .temp-gauge {
+      background: linear-gradient(to top, #10b981, #f59e0b, #ef4444);
+      border-radius: 8px;
+    }
+    
+    .humidity-gauge {
+      background: linear-gradient(to top, #60a5fa, #3b82f6, #1d4ed8);
+      border-radius: 8px;
+    }
+    
+    .relay-btn {
+      transition: all 0.3s ease;
+    }
+    
+    .relay-btn:hover {
+      transform: translateY(-2px);
+    }
+    
+    .relay-btn:active {
+      transform: translateY(0);
+    }
+    
+    .status-ring {
+      border: 3px solid currentColor;
+      border-radius: 50%;
+    }
+    
+    .grid-bg {
+      background-image: 
+        linear-gradient(rgba(59, 130, 246, 0.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(59, 130, 246, 0.03) 1px, transparent 1px);
+      background-size: 40px 40px;
+    }
+    
+    .toast {
+      position: fixed;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      padding: 12px 24px;
+      border-radius: 8px;
+      z-index: 1000;
+      animation: slideUp 0.3s ease-out;
+    }
+    
+    @keyframes slideUp {
+      from { opacity: 0; transform: translate(-50%, 20px); }
+      to { opacity: 1; transform: translate(-50%, 0); }
+    }
+  </style>
+  <style>body { box-sizing: border-box; }</style>
+  <script src="/_sdk/data_sdk.js" type="text/javascript"></script>
+  <script src="/_sdk/element_sdk.js" type="text/javascript"></script>
+ </head>
+ <body class="h-full">
+  <div id="app" class="h-full w-full overflow-auto grid-bg">
+   <div class="min-h-full p-4 md:p-6 lg:p-8"><!-- Header -->
+    <header class="mb-6 animate-in" style="animation-delay: 0.1s;">
+     <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+      <div class="flex items-center gap-4"><!-- Logo -->
+       <div class="w-14 h-14 rounded-xl flex items-center justify-center" style="background: linear-gradient(135deg, #10b981, #3b82f6);">
+        <svg width="32" height="32" viewbox="0 0 32 32" fill="none"><path d="M16 4C16 4 8 12 8 18C8 22.4183 11.5817 26 16 26C20.4183 26 24 22.4183 24 18C24 12 16 4 16 4Z" fill="white" fill-opacity="0.9" /> <path d="M16 8C16 8 12 13 12 17C12 19.2091 13.7909 21 16 21C18.2091 21 20 19.2091 20 17C20 13 16 8 16 8Z" fill="#0a1628" fill-opacity="0.3" /> <circle cx="14" cy="16" r="2" fill="white" fill-opacity="0.6" />
+        </svg>
+       </div>
+       <div>
+        <h1 id="system-title" class="text-2xl md:text-3xl font-bold" style="color: var(--text-color);">AgriFlo WaterWise</h1>
+        <p id="location-name" class="text-sm opacity-60">Smart Irrigation System</p>
+       </div>
+      </div>
+      <div class="flex items-center gap-3">
+       <div id="water-status" class="flex items-center gap-2 px-4 py-2 rounded-full" style="background: var(--surface-color);">
+        <div class="w-3 h-3 rounded-full bg-green-500 pulse-dot"></div><span class="text-sm font-medium">Water OK</span>
+       </div>
+       <div class="px-4 py-2 rounded-full mono text-sm" style="background: var(--surface-color);"><span id="current-time">--:--:--</span>
+       </div>
+      </div>
+     </div>
+    </header><!-- Main Grid -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-6"><!-- Temperature Card -->
+     <div class="gradient-border animate-in" style="animation-delay: 0.2s;">
+      <div class="card-inner p-5">
+       <div class="flex items-center justify-between mb-4">
+        <h2 class="text-lg font-semibold opacity-80">Temperature</h2>
+        <svg width="24" height="24" viewbox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2"><path d="M14 4v10.54a4 4 0 1 1-4 0V4a2 2 0 0 1 4 0Z" />
+        </svg>
+       </div>
+       <div class="flex items-end gap-4">
+        <div class="flex-1">
+         <div class="text-5xl font-bold mono" id="temp-value" style="color: #10b981;">
+          --
+         </div>
+         <div class="text-sm opacity-60 mt-1">
+          °C
+         </div>
+        </div>
+        <div class="w-8 h-32 rounded-lg overflow-hidden relative" style="background: rgba(255,255,255,0.1);">
+         <div id="temp-bar" class="temp-gauge absolute bottom-0 w-full transition-all duration-500" style="height: 50%;"></div>
+         <div class="absolute inset-0 flex flex-col justify-between py-2 px-1 text-xs mono opacity-50"><span>50°</span> <span>25°</span> <span>0°</span>
+         </div>
+        </div>
+       </div>
+       <div class="mt-4 pt-4 border-t border-white/10">
+        <div class="flex justify-between text-sm"><span class="opacity-60">Sprinkler Threshold</span> <span class="mono" id="threshold-display" style="color: #f59e0b;">33°C</span>
+        </div>
+       </div>
+      </div>
+     </div><!-- Humidity Card -->
+     <div class="gradient-border animate-in" style="animation-delay: 0.3s;">
+      <div class="card-inner p-5">
+       <div class="flex items-center justify-between mb-4">
+        <h2 class="text-lg font-semibold opacity-80">Humidity</h2>
+        <svg width="24" height="24" viewbox="0 0 24 24" fill="none" stroke="#3b82f6" stroke-width="2"><path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z" />
+        </svg>
+       </div>
+       <div class="flex items-end gap-4">
+        <div class="flex-1">
+         <div class="text-5xl font-bold mono" id="humidity-value" style="color: #3b82f6;">
+          --
+         </div>
+         <div class="text-sm opacity-60 mt-1">
+          %
+         </div>
+        </div>
+        <div class="w-8 h-32 rounded-lg overflow-hidden relative" style="background: rgba(255,255,255,0.1);">
+         <div id="humidity-bar" class="humidity-gauge absolute bottom-0 w-full transition-all duration-500" style="height: 50%;"></div>
+         <div class="absolute inset-0 flex flex-col justify-between py-2 px-1 text-xs mono opacity-50"><span>100</span> <span>50</span> <span>0</span>
+         </div>
+        </div>
+       </div>
+       <div class="mt-4 pt-4 border-t border-white/10">
+        <div class="flex justify-between text-sm"><span class="opacity-60">Optimal Range</span> <span class="mono" style="color: #3b82f6;">40-70%</span>
+        </div>
+       </div>
+      </div>
+     </div><!-- System Status Card -->
+     <div class="gradient-border animate-in" style="animation-delay: 0.4s;">
+      <div class="card-inner p-5">
+       <div class="flex items-center justify-between mb-4">
+        <h2 class="text-lg font-semibold opacity-80">System Status</h2>
+        <div id="system-status-dot" class="w-3 h-3 rounded-full bg-green-500 pulse-dot"></div>
+       </div>
+       <div class="space-y-3">
+        <div class="flex items-center justify-between p-3 rounded-lg" style="background: rgba(255,255,255,0.05);">
+         <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-lg flex items-center justify-center" style="background: rgba(16, 185, 129, 0.2);">
+           <svg width="20" height="20" viewbox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" /> <path d="M9 12h6M12 9v6" />
+           </svg>
+          </div><span class="font-medium">ESP32</span>
+         </div><span class="text-sm px-3 py-1 rounded-full bg-green-500/20 text-green-400">Online</span>
+        </div>
+        <div class="flex items-center justify-between p-3 rounded-lg" style="background: rgba(255,255,255,0.05);">
+         <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-lg flex items-center justify-center" style="background: rgba(59, 130, 246, 0.2);">
+           <svg width="20" height="20" viewbox="0 0 24 24" fill="none" stroke="#3b82f6" stroke-width="2"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83" />
+           </svg>
+          </div><span class="font-medium">DHT22</span>
+         </div><span id="dht-status" class="text-sm px-3 py-1 rounded-full bg-green-500/20 text-green-400">Active</span>
+        </div>
+        <div class="flex items-center justify-between p-3 rounded-lg" style="background: rgba(255,255,255,0.05);">
+         <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-lg flex items-center justify-center" style="background: rgba(245, 158, 11, 0.2);">
+           <svg width="20" height="20" viewbox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="2"><path d="M22 12h-4l-3 9L9 3l-3 9H2" /> 
+           </svg>
+          </div><span class="font-medium">Data Logs</span>
+         </div><span id="log-count" class="text-sm px-3 py-1 rounded-full mono" style="background: rgba(245, 158, 11, 0.2); color: #f59e0b;">0</span>
+        </div>
+       </div>
+      </div>
+     </div><!-- Relay Controls -->
+     <div class="lg:col-span-2 gradient-border animate-in" style="animation-delay: 0.5s;">
+      <div class="card-inner p-5">
+       <div class="flex items-center justify-between mb-6">
+        <h2 class="text-lg font-semibold opacity-80">Relay Controls</h2><span class="text-sm opacity-60">Manual Override</span>
+       </div>
+       <div class="grid grid-cols-1 md:grid-cols-3 gap-4"><!-- Nipple Drip Relay -->
+        <div id="relay-nipple-card" class="p-5 rounded-xl transition-all duration-300" style="background: rgba(255,255,255,0.05);">
+         <div class="flex items-center gap-3 mb-4">
+          <div class="w-12 h-12 rounded-xl flex items-center justify-center" style="background: linear-gradient(135deg, #10b981, #059669);">
+           <svg width="24" height="24" viewbox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><path d="M12 2v6M12 22v-6M2 12h6M22 12h-6" /> <circle cx="12" cy="12" r="4" />
+           </svg>
+          </div>
+          <div>
+           <h3 class="font-semibold">Nipple Drip</h3>
+           <p class="text-xs opacity-60">GPIO 16</p>
+          </div>
+         </div>
+         <div class="flex items-center justify-between mb-3"><span id="nipple-status" class="text-sm font-medium text-gray-400">OFF</span>
+          <div id="nipple-indicator" class="w-4 h-4 rounded-full bg-gray-600"></div>
+         </div><button id="btn-nipple" class="relay-btn w-full py-3 rounded-lg font-semibold transition-all" style="background: var(--primary-action);"> Toggle </button>
+         <div class="mt-3 text-xs opacity-50 mono">
+          Interval: 10min / ON: 15sec
+         </div>
+        </div><!-- Sprinkler Relay -->
+        <div id="relay-sprinkler-card" class="p-5 rounded-xl transition-all duration-300" style="background: rgba(255,255,255,0.05);">
+         <div class="flex items-center gap-3 mb-4">
+          <div class="w-12 h-12 rounded-xl flex items-center justify-center" style="background: linear-gradient(135deg, #3b82f6, #2563eb);">
+           <svg width="24" height="24" viewbox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z" /> <path d="M12 6v6l4 2" />
+           </svg>
+          </div>
+          <div>
+           <h3 class="font-semibold">Sprinkler</h3>
+           <p class="text-xs opacity-60">GPIO 17</p>
+          </div>
+         </div>
+         <div class="flex items-center justify-between mb-3"><span id="sprinkler-status" class="text-sm font-medium text-gray-400">OFF</span>
+          <div id="sprinkler-indicator" class="w-4 h-4 rounded-full bg-gray-600"></div>
+         </div><button id="btn-sprinkler" class="relay-btn w-full py-3 rounded-lg font-semibold transition-all" style="background: var(--secondary-action);"> Toggle </button>
+         <div class="mt-3 text-xs opacity-50 mono">
+          Burst: 12sec / Cooldown: 3min
+         </div>
+        </div><!-- High Jet Cleaning Relay -->
+        <div id="relay-cleaning-card" class="p-5 rounded-xl transition-all duration-300" style="background: rgba(255,255,255,0.05);">
+         <div class="flex items-center gap-3 mb-4">
+          <div class="w-12 h-12 rounded-xl flex items-center justify-center" style="background: linear-gradient(135deg, #f59e0b, #d97706);">
+           <svg width="24" height="24" viewbox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z" />
+           </svg>
+          </div>
+          <div>
+           <h3 class="font-semibold">High Jet Clean</h3>
+           <p class="text-xs opacity-60">GPIO 18</p>
+          </div>
+         </div>
+         <div class="flex items-center justify-between mb-3"><span id="cleaning-status" class="text-sm font-medium text-gray-400">OFF</span>
+          <div id="cleaning-indicator" class="w-4 h-4 rounded-full bg-gray-600"></div>
+         </div><button id="btn-cleaning" class="relay-btn w-full py-3 rounded-lg font-semibold transition-all" style="background: #f59e0b;"> Toggle </button>
+         <div class="mt-3 text-xs opacity-50 mono">
+          Max Duration: 30sec
+         </div>
+        </div>
+       </div>
+      </div>
+     </div><!-- Quick Actions -->
+     <div class="gradient-border animate-in" style="animation-delay: 0.6s;">
+      <div class="card-inner p-5">
+       <h2 class="text-lg font-semibold opacity-80 mb-4">Quick Actions</h2>
+       <div class="space-y-3"><button id="btn-log" class="w-full py-3 px-4 rounded-lg font-medium flex items-center justify-center gap-2 transition-all hover:opacity-80" style="background: var(--primary-action);">
+         <svg width="20" height="20" viewbox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14" />
+         </svg> Log Current Reading </button> <button id="btn-all-off" class="w-full py-3 px-4 rounded-lg font-medium flex items-center justify-center gap-2 transition-all hover:opacity-80" style="background: #ef4444;">
+         <svg width="20" height="20" viewbox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10" /> <path d="M15 9l-6 6M9 9l6 6" />
+         </svg> All Relays OFF </button> <button id="btn-clear-logs" class="w-full py-3 px-4 rounded-lg font-medium flex items-center justify-center gap-2 transition-all hover:opacity-80" style="background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2);">
+         <svg width="20" height="20" viewbox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+         </svg> Clear All Logs </button>
+       </div>
+      </div>
+     </div><!-- Data Logs -->
+     <div class="lg:col-span-3 gradient-border animate-in" style="animation-delay: 0.7s;">
+      <div class="card-inner p-5">
+       <div class="flex items-center justify-between mb-4">
+        <h2 class="text-lg font-semibold opacity-80">Data Logs</h2><span id="log-info" class="text-sm opacity-60">Latest readings</span>
+       </div>
+       <div class="overflow-x-auto">
+        <table class="w-full">
+         <thead>
+          <tr class="text-left text-sm opacity-60 border-b border-white/10">
+           <th class="pb-3 pr-4">Timestamp</th>
+           <th class="pb-3 pr-4">Temp (°C)</th>
+           <th class="pb-3 pr-4">Humidity (%)</th>
+           <th class="pb-3 pr-4">Sprinkler</th>
+           <th class="pb-3 pr-4">Nipple</th>
+           <th class="pb-3 pr-4">Cleaning</th>
+           <th class="pb-3">Water</th>
+          </tr>
+         </thead>
+         <tbody id="logs-table" class="mono text-sm">
+          <tr id="no-logs-row">
+           <td colspan="7" class="py-8 text-center opacity-50">No logs recorded yet. Click "Log Current Reading" to start.</td>
+          </tr>
+         </tbody>
+        </table>
+       </div>
+      </div>
+     </div>
+    </div><!-- Footer -->
+    <footer class="mt-6 text-center text-sm opacity-50 animate-in" style="animation-delay: 0.8s;">
+     <p>AgriFlo WaterWise System: An Automated Irrigation for Piggery Farms</p>
+    </footer>
+   </div>
+  </div>
+  <div id="toast-container"></div>
+  <script>
+    // ==========================================
+    // AgriFlo WaterWise Dashboard
+    // ==========================================
+    
+    // Default configuration
+    const defaultConfig = {
+      system_title: 'AgriFlo WaterWise',
+      location_name: 'Smart Irrigation System',
+      background_color: '#0a1628',
+      surface_color: '#1a2942',
+      text_color: '#e8f0f8',
+      primary_action: '#10b981',
+      secondary_action: '#3b82f6',
+      sprinkler_on_temp: '33',
+      sprinkler_off_temp: '31.5'
+    };
+    
+    // Current state
+    let currentLogs = [];
+    let simulatedState = {
+      temperature: 28.5,
+      humidity: 65,
+      sprinkler_active: false,
+      nipple_active: false,
+      cleaning_active: false,
+      water_ok: true
+    };
+    
+    // Toast notification
+    function showToast(message, type = 'success') {
+      const container = document.getElementById('toast-container');
+      const toast = document.createElement('div');
+      toast.className = 'toast';
+      toast.style.background = type === 'success' ? '#10b981' : type === 'error' ? '#ef4444' : '#3b82f6';
+      toast.style.color = 'white';
+      toast.textContent = message;
+      container.appendChild(toast);
+      
+      setTimeout(() => {
+        toast.style.opacity = '0';
+        setTimeout(() => toast.remove(), 300);
+      }, 3000);
+    }
+    
+    // Update time display
+    function updateTime() {
+      const now = new Date();
+      const timeStr = now.toLocaleTimeString('en-US', { hour12: false });
+      document.getElementById('current-time').textContent = timeStr;
+    }
+    setInterval(updateTime, 1000);
+    updateTime();
+    
+    // Simulate sensor data variations
+    function simulateSensorData() {
+      // Small random variations to simulate real sensor behavior
+      simulatedState.temperature += (Math.random() - 0.5) * 0.5;
+      simulatedState.temperature));
+      
+      simulatedState.humidity += (Math.random() - 0.5) * 2;
+      simulatedState.humidity = Math.max(30, Math.min(90, simulatedState.humidity));
+      
+      updateSensorDisplay();
+    }
+    
+    // Update sensor displays
+    function updateSensorDisplay() {
+      const tempEl = document.getElementById('temp-value');
+      const humEl = document.getElementById('humidity-value');
+      const tempBar = document.getElementById('temp-bar');
+      const humBar = document.getElementById('humidity-bar');
+      
+      const temp = simulatedState.temperature.toFixed(1);
+      const hum = simulatedState.humidity.toFixed(0);
+      
+      tempEl.textContent = temp;
+      humEl.textContent = hum;
+      // Update bars (0-50°C range for temp, 0-100% for humidity)
+      const tempPercent = Math.min(100, Math.max(0, (simulatedState.temperature / 50) * 100));
+      const humPercent = Math.min(100, Math.max(0, simulatedState.humidity));
+      
+      tempBar.style.height = `${tempPercent}%`;
+      humBar.style.height = `${humPercent}%`;
+      
+      // Color coding for temperature
+      if (simulatedState.temperature >= 33) {
+        tempEl.style.color = '#ef4444';
+      } else if (simulatedState.temperature >= 30) {
+        tempEl.style.color = '#f59e0b';
+      } else {
+        tempEl.style.color = '#10b981';
+      }
+    }
+    
+    // Update relay UI
+    function updateRelayUI() {
+      // Nipple
+      const nippleStatus = document.getElementById('nipple-status');
+      const nippleIndicator = document.getElementById('nipple-indicator');
+      const nippleCard = document.getElementById('relay-nipple-card');
+      
+      if (simulatedState.nipple_active) {
+        nippleStatus.textContent = 'ON';
+        nippleStatus.className = 'text-sm font-medium text-green-400';
+        nippleIndicator.className = 'w-4 h-4 rounded-full bg-green-500 pulse-dot';
+        nippleCard.classList.add('glow-green');
+      } else {
+        nippleStatus.textContent = 'OFF';
+        nippleStatus.className = 'text-sm font-medium text-gray-400';
+        nippleIndicator.className = 'w-4 h-4 rounded-full bg-gray-600';
+        nippleCard.classList.remove('glow-green');
+      }
+      // Sprinkler
+      const sprinklerStatus = document.getElementById('sprinkler-status');
+      const sprinklerIndicator = document.getElementById('sprinkler-indicator');
+      const sprinklerCard = document.getElementById('relay-sprinkler-card');
+      
+      if (simulatedState.sprinkler_active) {
+        sprinklerStatus.textContent = 'ON';
+        sprinklerStatus.className = 'text-sm font-medium text-blue-400';
+        sprinklerIndicator.className = 'w-4 h-4 rounded-full bg-blue-500 pulse-dot';
+        sprinklerCard.classList.add('glow-blue');
+      } else {
+        sprinklerStatus.textContent = 'OFF';
+        sprinklerStatus.className = 'text-sm font-medium text-gray-400';
+        sprinklerIndicator.className = 'w-4 h-4 rounded-full bg-gray-600';
+        sprinklerCard.classList.remove('glow-blue');
+      }
+      // Cleaning
+      const cleaningStatus = document.getElementById('cleaning-status');
+      const cleaningIndicator = document.getElementById('cleaning-indicator');
+      const cleaningCard = document.getElementById('relay-cleaning-card');
+      
+      if (simulatedState.cleaning_active) {
+        cleaningStatus.textContent = 'ON';
+        cleaningStatus.className = 'text-sm font-medium text-yellow-400';
+        cleaningIndicator.className = 'w-4 h-4 rounded-full bg-yellow-500 pulse-dot';
+        cleaningCard.classList.add('glow-red');
+      } else {
+        cleaningStatus.textContent = 'OFF';
+        cleaningStatus.className = 'text-sm font-medium text-gray-400';
+        cleaningIndicator.className = 'w-4 h-4 rounded-full bg-gray-600';
+        cleaningCard.classList.remove('glow-red');
+      }
+      // Water status
+      const waterStatus = document.getElementById('water-status');
+      if (simulatedState.water_ok) {
+        waterStatus.innerHTML = '<div class="w-3 h-3 rounded-full bg-green-500 pulse-dot"></div><span class="text-sm font-medium">Water OK</span>';
+      } else {
+        waterStatus.innerHTML = '<div class="w-3 h-3 rounded-full bg-red-500 pulse-dot"></div><span class="text-sm font-medium text-red-400">Water Low!</span>';
+      }
+    }
+    
+    // Render logs table
+    function renderLogs(logs) {
+      const tbody = document.getElementById('logs-table');
+      const logCount = document.getElementById('log-count');
+      const logInfo = document.getElementById('log-info');
+      
+      logCount.textContent = logs.length;
+      logInfo.textContent = logs.length > 0 ? `${logs.length} entries` : 'No logs yet';===&& && && && && && && && 
+      if (logs.length === 0) {
+        tbody.innerHTML = `
+          <tr id="no-logs-row">
+            <td colspan="7" class="py-8 text-center opacity-50">
+              No logs recorded yet. Click "Log Current Reading" to start.
+            </td>
+          </tr>
+        `;
+        return;
+      }
+      
+      // Sort by timestamp descending (newest first)
+      const sortedLogs = [...logs].sort((a, b) => {
+        return new Date(b.timestamp) - new Date(a.timestamp);
+      });
+      
+      tbody.innerHTML = sortedLogs.slice(0, 20).map(log => {
+        const date = new Date(log.timestamp);
+        const timeStr = date.toLocaleString();
+        return `
+          <tr class="border-b border-white/5 hover:bg-white/5 transition-colors">
+            <td class="py-3 pr-4 text-xs">${timeStr}</td>
+            <td class="py-3 pr-4">${log.temperature?.toFixed(1) || '--'}</td>
+            <td class="py-3 pr-4">${log.humidity?.toFixed(0) || '--'}</td>
+            <td class="py-3 pr-4">
+              <span class="px-2 py-1 rounded text-xs ${log.sprinkler_active ? 'bg-blue-500/20 text-blue-400' : 'bg-gray-500/20 text-gray-400'}">
+                ${log.sprinkler_active ? 'ON' : 'OFF'}
+              </span>
+            </td>
+            <td class="py-3 pr-4">
+              <span class="px-2 py-1 rounded text-xs ${log.nipple_active ? 'bg-green-500/20 text-green-400' : 'bg-gray-500/20 text-gray-400'}">
+                ${log.nipple_active ? 'ON' : 'OFF'}
+              </span>
+            </td>
+            <td class="py-3 pr-4">
+            <span class="px-2 py-1 rounded text-xs ${log.cleaning_active ? 'bg-yellow-500/20 text-yellow-400' : 'bg-gray-500/20 text-gray-400'}">
+                ${log.cleaning_active ? 'ON' : 'OFF'}
+              </span>
+            </td>
+            <td class="py-3">
+              <span class="px-2 py-1 rounded text-xs ${log.water_ok ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'}">
+                ${log.water_ok ? 'OK' : 'LOW'}
+              </span>
+            </td>
+          </tr>
+        `;
+      }).join('');
+    }
+    
+    // Apply config to UI
+    function onConfigChange(config) {
+      document.getElementById('system-title').textContent = config.system_title || defaultConfig.system_title;
+      document.getElementById('location-name').textContent = config.location_name || defaultConfig.location_name;
+      
+      // Update threshold display
+      const sprinklerOnTemp = parseFloat(config.sprinkler_on_temp) || parseFloat(defaultConfig.sprinkler_on_temp);
+      document.getElementById('threshold-display').textContent = `${sprinklerOnTemp}°C`;
+    }
+    
+    // Initialize app
+    function initApp() {
+      // Setup event listeners
+      setupEventListeners();
+      
+      // Start sensor simulation
+      updateSensorDisplay();
+      updateRelayUI();
+      setInterval(simulateSensorData, 3000);
+    }
+    function setupEventListeners() {
+      // Relay toggle buttons
+      document.getElementById('btn-nipple').addEventListener('click', () => {
+        simulatedState.nipple_active = !simulatedState.nipple_active;
+        updateRelayUI();
+        showToast(`Nipple Drip ${simulatedState.nipple_active ? 'activated' : 'deactivated'}`, 'info');
+      });
+      
+      document.getElementById('btn-sprinkler').addEventListener('click', () => {
+        simulatedState.sprinkler_active = !simulatedState.sprinkler_active;
+        updateRelayUI();
+        showToast(`Sprinkler ${simulatedState.sprinkler_active ? 'activated' : 'deactivated'}`, 'info');
+      });
+      
+      document.getElementById('btn-cleaning').addEventListener('click', () => {
+        simulatedState.cleaning_active = !simulatedState.cleaning_active;
+        updateRelayUI();
+        showToast(`High Jet Cleaning ${simulatedState.cleaning_active ? 'activated' : 'deactivated'}`, 'info');
+      });
+      
+      // Log current reading
+      document.getElementById('btn-log').addEventListener('click', () => {
+        const btn = document.getElementById('btn-log');
+        btn.disabled = true;
+        btn.innerHTML = '<span class="animate-spin">⏳</span> Logging...';
+        
+        const logEntry = {
+          timestamp: new Date().toISOString(),
+          temperature: simulatedState.temperature,
+          humidity: simulatedState.humidity,
+          sprinkler_active: simulatedState.sprinkler_active,
+          nipple_active: simulatedState.nipple_active,
+          cleaning_active: simulatedState.cleaning_active,
+          water_ok: simulatedState.water_ok
+        };
+        
+        currentLogs.push(logEntry);
+        renderLogs(currentLogs);
+        showToast('Reading logged successfully!', 'success');
+        
+        btn.disabled = false;
+        btn.innerHTML = `
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M12 5v14M5 12h14"/>
+          </svg>
+          Log Current Reading
+        `;
+      });
+      
+      // All relays off
+      document.getElementById('btn-all-off').addEventListener('click', () => {
+        simulatedState.sprinkler_active = false;
+        simulatedState.nipple_active = false;
+        simulatedState.cleaning_active = false;
+        updateRelayUI();
+        showToast('All relays turned OFF', 'success');
+      });
+      
+      // Clear logs with confirmation
+      let clearPending = false;
+      document.getElementById('btn-clear-logs').addEventListener('click', () => {
+        if (!clearPending) {
+          clearPending = true;
+          const btn = document.getElementById('btn-clear-logs');
+          btn.innerHTML = `
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+            </svg>
+            Click again to confirm
+          `;
+          btn.style.background = '#ef4444';
+          setTimeout(() => {
+            if (clearPending) {
+              clearPending = false;
+              btn.innerHTML = `
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                </svg>
+                Clear All Logs
+              `;
+              btn.style.background = 'rgba(255,255,255,0.1)';
+            }
+          }, 3000);
+        } else {
+          clearPending = false;
+          const btn = document.getElementById('btn-clear-logs');
+          btn.disabled = true;
+          btn.innerHTML = '<span class="animate-spin">⏳</span> Clearing...';
+          // Clear all logs locally
+          currentLogs = [];
+          renderLogs(currentLogs);
+          
+          btn.disabled = false;
+          btn.innerHTML = `
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+            </svg>
+            Clear All Logs
+          `;
+          btn.style.background = 'rgba(255,255,255,0.1)';
+          showToast('All logs cleared', 'success');
+        }
+      });
+    }
+    
+    // Start the app
+    initApp();</script>
+ <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9d5ee5ae60b80454',t:'MTc3MjQzODczNS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&
+  (document.onreadystatechange=e,c())}}}})();</script></body>
+ </html>
